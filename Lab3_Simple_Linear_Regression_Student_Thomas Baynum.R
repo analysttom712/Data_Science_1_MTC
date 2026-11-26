@@ -1,0 +1,295 @@
+# ============================================================================
+# Lab 3: Simple Linear Regression
+# Predicting Salary from Years of Experience
+# ============================================================================
+
+# Student name:Thomas Baynum
+# Date: 11/8/2026
+
+# FILE SETUP -----------------------------------------------------------------
+
+# Place Salary_dataset.csv in the same folder as this R script.
+# Do not use a personal setwd() path in the submitted script.
+
+# Install ggplot2 only if it is not already installed:
+# install.packages("ggplot2")
+
+library(ggplot2)
+
+
+# PART 1: IMPORT AND INSPECT THE DATA ----------------------------------------
+
+data <- read.csv("Salary_dataset.csv")
+
+# Display the structure of the dataset.
+# TYPE YOUR CODE BELOW
+str(data)
+
+
+# Display a statistical summary of the dataset.
+# TYPE YOUR CODE BELOW
+summary(data)
+
+
+# Count missing values in each column.
+# TYPE YOUR CODE BELOW
+colSums(is.na(data))
+
+
+# Answer in comments:
+# 1. How many observations are present?
+# Answer: 30 observations (rows) with 2 variables, Years and Salary.
+#
+# 2. Are either of the variables missing values?
+# Answer: No. colSums(is.na(data)) returns 0 for both Years and Salary.
+#
+# 3. What are the minimum and maximum years of experience?
+# Answer: Minimum is 1.2 years and maximum is 10.6 years of experience.
+
+
+# PART 2: EXPLORE THE RELATIONSHIP ------------------------------------------
+
+# Create a scatterplot that includes:
+# - Years on the x-axis
+# - Salary on the y-axis
+# - A fitted linear regression line
+# - A descriptive title
+# - Clear axis labels
+
+# TYPE YOUR CODE BELOW
+ggplot(data, aes(x = Years, y = Salary)) +
+  geom_point(color = "steelblue", size = 2.5) +
+  geom_smooth(method = "lm", se = FALSE, color = "red") +
+  labs(
+    title = "Salary by Years of Experience",
+    x = "Years of Experience",
+    y = "Salary"
+  ) +
+  theme_minimal()
+
+
+# Answer in comments:
+# 1. Does the plot suggest a positive, negative, or absent relationship?
+# Answer: A strong positive relationship. Salary rises steadily as years of
+#         experience increase, and the points sit close to the fitted line
+#         (correlation r = 0.978).
+#
+# 2. Are any observations far from the overall pattern?
+# Answer: No extreme outliers. A few points sit a bit farther from the line,
+#         such as 6.1 years ($93,941) and 8.3 years ($113,813), which are
+#         above the line, and a cluster around 4-5 years that falls below it,
+#         but none break the overall linear pattern.
+
+
+# PART 3: CREATE TRAINING AND TEST SETS -------------------------------------
+
+# Use set.seed(123).
+# Randomly assign approximately 80% of the rows to training_set.
+# Assign the remaining rows to test_set.
+
+# TYPE YOUR CODE BELOW
+set.seed(123)
+
+training_rows <- sample(
+  seq_len(nrow(data)),
+  size = floor(0.80 * nrow(data))
+)
+
+training_set <- data[training_rows, ]
+test_set <- data[-training_rows, ]
+
+
+# Display the number of rows in each set.
+# TYPE YOUR CODE BELOW
+nrow(training_set)
+nrow(test_set)
+
+
+# PART 4: FIT AND INTERPRET THE MODEL ---------------------------------------
+
+# Fit a simple linear regression model that predicts Salary from Years.
+# Train the model with training_set.
+
+# TYPE YOUR CODE BELOW
+model <- lm(Salary ~ Years, data = training_set)
+
+
+# Display the model summary and coefficients.
+# TYPE YOUR CODE BELOW
+summary(model)
+coef(model)
+
+
+# Answer in comments:
+# 1. Write the fitted regression equation.
+# Answer: Predicted Salary = 24,480.8 + 9,573.3 * Years
+#
+# 2. Interpret the slope in the context of salary and experience.
+# Answer: Each additional year of experience is associated with an increase of
+#         about $9,573 in predicted salary, on average.
+#
+# 3. Does the intercept have a useful real-world interpretation? Explain.
+# Answer: Only partly. The intercept ($24,481) is the predicted salary at 0 years
+#         of experience. No one in the data has fewer than 1.2 years, so 0 is
+#         outside the observed range and the value is an extrapolation. It is
+#         best read as the line's starting point, not a real entry-level salary.
+#
+# 4. Is Years statistically significant at the 0.05 level? Use its p-value.
+# Answer: Yes. The p-value for Years is < 2e-16 (t = 22.4), far below 0.05, so
+#         Years is a statistically significant predictor of Salary.
+#
+# 5. What proportion of salary variation is explained by Years? Use R-squared.
+# Answer: R-squared = 0.958, so about 95.8% of the variation in salary in the
+#         training set is explained by years of experience (adjusted R-squared
+#         = 0.956).
+
+
+# PART 5: PREDICT AND EVALUATE ----------------------------------------------
+
+# Use the model to predict Salary for test_set.
+# Store the predictions in test_set$Predicted_Salary.
+
+# TYPE YOUR CODE BELOW
+test_set$Predicted_Salary <- predict(model, newdata = test_set)
+
+
+# Calculate each residual as actual Salary minus Predicted_Salary.
+# Store the residuals in test_set$Residual.
+
+# TYPE YOUR CODE BELOW
+test_set$Residual <- test_set$Salary - test_set$Predicted_Salary
+
+
+# Calculate test-set RMSE and store it in rmse.
+# TYPE YOUR CODE BELOW
+rmse <- sqrt(mean(test_set$Residual^2))
+
+
+# Calculate test-set MAE and store it in mae.
+# TYPE YOUR CODE BELOW
+mae <- mean(abs(test_set$Residual))
+
+
+# Display test_set, rmse, and mae.
+# TYPE YOUR CODE BELOW
+test_set
+rmse
+mae
+
+
+# Answer in comments:
+# 1. How many test observations were predicted?
+# Answer: 6 test observations (the remaining 20% of the 30 rows).
+#
+# 2. What do RMSE and MAE say about the typical prediction error?
+# Answer: RMSE = $5,946 and MAE = $5,422. A typical prediction is off by about
+#         $5,400-$5,900, which is roughly 7-8% of the average salary ($76,004).
+#         RMSE is only a little larger than MAE, so no single test error
+#         dominates.
+#
+# 3. Which test observation has the largest absolute error?
+# Answer: Row 2 (1.4 years, actual $46,206, predicted $37,883). Its residual is
+#         +$8,323, so the model under-predicted that salary the most.
+
+
+# PART 6: PLOT ACTUAL AND PREDICTED SALARIES -------------------------------
+
+# Create a test-set plot that shows:
+# - Actual Salary values
+# - Predicted Salary values
+# - Different colors or shapes for actual and predicted values
+# - A descriptive title and clear axis labels
+
+# TYPE YOUR CODE BELOW
+ggplot(test_set, aes(x = Years)) +
+  geom_point(aes(y = Salary, color = "Actual"), size = 3) +
+  geom_point(aes(y = Predicted_Salary, color = "Predicted"),
+             size = 3, shape = 17) +
+  labs(
+    title = "Actual and Predicted Salaries: Test Set",
+    x = "Years of Experience",
+    y = "Salary",
+    color = "Value"
+  ) +
+  theme_minimal()
+
+
+# Describe where predictions are close to the actual salaries and where the
+# model makes larger errors.
+# Answer: The predictions are closest at 10.4 years (off by about $1,651) and at
+#         3.0 years (about $3,442). The larger errors are at 1.4 years, where
+#         the model under-predicts by about $8,323, and at 4.1 years, where it
+#         over-predicts both observations by about $6,800-$7,900. The model is
+#         least accurate in the low-to-middle range of experience, where
+#         salaries vary more for people with similar years.
+
+
+# PART 7: EXAMINE RESIDUALS -------------------------------------------------
+
+# Create a data frame named training_diagnostics containing:
+# - Fitted values from the training model
+# - Training residuals
+
+# TYPE YOUR CODE BELOW
+training_diagnostics <- data.frame(
+  Fitted   = fitted(model),
+  Residual = residuals(model)
+)
+
+
+# Create a residual plot that includes:
+# - Fitted salary on the x-axis
+# - Residual on the y-axis
+# - A horizontal dashed line at zero
+# - A descriptive title and clear axis labels
+
+# TYPE YOUR CODE BELOW
+ggplot(training_diagnostics, aes(x = Fitted, y = Residual)) +
+  geom_point(color = "steelblue", size = 2.5) +
+  geom_hline(yintercept = 0, color = "red", linetype = "dashed") +
+  labs(
+    title = "Residual Plot",
+    x = "Fitted Salary",
+    y = "Residual"
+  ) +
+  theme_minimal()
+
+
+# Answer in comments:
+# 1. Are the residuals distributed above and below zero?
+# Answer: Yes. The training residuals are scattered both above and below zero,
+#         with 12 positive and 12 negative, and the median residual is close
+#         to zero (-$160).
+#
+# 2. Do you see a curve, funnel shape, or unusually large residual?
+# Answer: No clear curve or funnel shape. The spread stays about the same across
+#         fitted salaries. There is a small run of negative residuals around
+#         $60,000-$75,000 fitted salary. The largest residual is about +$11,063
+#         (6.1 years), which is under 2 residual standard errors ($5,769), so it
+#         is not unusually large.
+#
+# 3. What does the pattern suggest about the linear model?
+# Answer: The linear model is a reasonable fit. The residuals look random, with
+#         roughly constant variance and no strong pattern, so the linearity and
+#         equal-variance assumptions appear to hold for this data.
+
+
+# PART 8: CONCLUSION ---------------------------------------------------------
+
+# Write one short paragraph in comments that answers:
+# 1. Is there evidence of a linear relationship between experience and salary?
+# 2. How would you explain the slope to someone unfamiliar with regression?
+# 3. How well did the model predict salaries in the test set?
+# 4. What is one limitation of using Years alone to predict Salary?
+#
+# Conclusion:
+# There is strong evidence of a linear relationship between experience and
+# salary: the slope is highly significant and Years explains about
+# 95.8% of the salary variation in the training data. In plain terms, the
+# slope means that each extra year of experience adds about $9,500 to the
+# expected salary. On the 6 test observations the model predicted well, with
+# a typical error of about $5,400-$5,900 (MAE $5,422, RMSE $5,946). One
+# limitation is that Years is the only predictor. Salary also depends on job
+# title, industry, education, location and performance, which the model
+# ignores. With only 30 observations and a range of 1.2-10.6 years, it also
+# should not be used to predict salaries far outside that range.
