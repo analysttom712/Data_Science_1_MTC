@@ -57,7 +57,7 @@ The project files are the `.Rmd` source and its rendered HTML/PDF report.
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/analysttom712/<repo-name>.git
+   git clone https://github.com/analysttom712/Data_Science_1MTC-TB.git
    ```
 
 2. **Open the project in RStudio**
